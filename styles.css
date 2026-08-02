@@ -50,7 +50,9 @@ body {
 }
 
 button,
-select {
+select,
+input,
+textarea {
   font: inherit;
 }
 
@@ -63,6 +65,8 @@ select,
 
 button:focus-visible,
 select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
 .course-card:focus-visible,
 .agenda-card:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 50%, transparent);
@@ -129,6 +133,22 @@ select:focus-visible,
 .header-actions {
   display: flex;
   gap: 8px;
+}
+
+.icon-button.has-local-data {
+  position: relative;
+}
+
+.icon-button.has-local-data::after {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--accent);
+  content: "";
 }
 
 .icon-button,
@@ -641,6 +661,150 @@ footer {
   line-height: 1.7;
 }
 
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.dialog-actions-split {
+  flex-wrap: wrap;
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+.button-primary,
+.button-secondary,
+.button-danger,
+.file-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-primary {
+  color: #fff;
+  background: var(--accent);
+}
+
+.button-secondary,
+.file-button {
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--panel-solid);
+}
+
+.button-danger {
+  border-color: color-mix(in srgb, #c93e35 28%, transparent);
+  color: #b8332b;
+  background: color-mix(in srgb, #c93e35 8%, transparent);
+}
+
+:root[data-theme="dark"] .button-danger {
+  color: #ff8a82;
+}
+
+.edit-dialog {
+  width: min(660px, calc(100% - 32px));
+  overflow-y: auto;
+}
+
+.editor-accent {
+  --course-hue: 12;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.field > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--panel-solid);
+  outline: none;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+
+.form-message {
+  min-height: 18px;
+  margin: 12px 0 -8px;
+  color: #b8332b;
+  font-size: 11px;
+}
+
+.data-dialog {
+  width: min(560px, calc(100% - 32px));
+}
+
+.data-accent {
+  --course-hue: 206;
+}
+
+.data-status {
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--panel-solid) 72%, transparent);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.manage-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.manage-actions .button-danger {
+  grid-column: 1 / -1;
+}
+
 .detail-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -986,6 +1150,35 @@ noscript {
     font-size: 25px;
   }
 
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-wide {
+    grid-column: auto;
+  }
+
+  .dialog-actions-split .action-spacer {
+    display: none;
+  }
+
+  .dialog-actions-split > button {
+    flex: 1 1 calc(50% - 5px);
+  }
+
+  .dialog-actions-split .button-danger {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .manage-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .manage-actions .button-danger {
+    grid-column: auto;
+  }
+
   .detail-list {
     grid-template-columns: 1fr;
   }
@@ -1038,6 +1231,8 @@ noscript {
   .masthead,
   .next-card,
   .today-button,
+  #addButton,
+  #dataButton,
   .week-switcher,
   .mobile-schedule,
   footer {

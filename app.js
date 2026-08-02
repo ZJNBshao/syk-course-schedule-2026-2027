@@ -1,11 +1,19 @@
 (() => {
   "use strict";
 
-  const data = window.SCHEDULE_DATA;
-  if (!data) {
+  const sourceData = window.SCHEDULE_DATA;
+  if (!sourceData) {
     document.body.innerHTML = "<p style='padding:2rem'>课表数据加载失败，请确认 data.js 与页面位于同一目录。</p>";
     return;
   }
+
+  const storageKey = "syk-schedule-custom-data-v1";
+  const originalEvents = clone(sourceData.events);
+  const data = {
+    ...sourceData,
+    courses: [...sourceData.courses],
+    events: loadStoredEvents(),
+  };
 
   const weekdayNames = { 一: "周一", 二: "周二", 三: "周三", 四: "周四", 五: "周五", 六: "周六", 日: "周日" };
   const timelineRows = [
@@ -41,7 +49,10 @@
     13: ["21:45", "22:25"],
   };
   const hues = [11, 206, 151, 274, 42, 333, 184, 93, 231, 305, 66, 25, 169];
-  const byId = new Map(data.events.map((event) => [event.id, event]));
+  const semesterDays = data.weeks.flatMap((week) =>
+    week.days.map((day) => ({ ...day, week: week.number })),
+  );
+  let byId = new Map();
 
   const elements = {
     grid: document.querySelector("#scheduleGrid"),
@@ -57,6 +68,8 @@
     nextMeta: document.querySelector("#nextMeta"),
     themeButton: document.querySelector("#themeButton"),
     printButton: document.querySelector("#printButton"),
+    addButton: document.querySelector("#addButton"),
+    dataButton: document.querySelector("#dataButton"),
     dialog: document.querySelector("#courseDialog"),
     dialogAccent: document.querySelector("#dialogAccent"),
     dialogType: document.querySelector("#dialogType"),
@@ -66,6 +79,28 @@
     dialogPeriod: document.querySelector("#dialogPeriod"),
     dialogLocation: document.querySelector("#dialogLocation"),
     dialogTeacher: document.querySelector("#dialogTeacher"),
+    editEventButton: document.querySelector("#editEventButton"),
+    editDialog: document.querySelector("#editDialog"),
+    editForm: document.querySelector("#editForm"),
+    editDialogTitle: document.querySelector("#editDialogTitle"),
+    closeEditButton: document.querySelector("#closeEditButton"),
+    cancelEditButton: document.querySelector("#cancelEditButton"),
+    deleteEventButton: document.querySelector("#deleteEventButton"),
+    editCourse: document.querySelector("#editCourse"),
+    editType: document.querySelector("#editType"),
+    editDate: document.querySelector("#editDate"),
+    editStartSection: document.querySelector("#editStartSection"),
+    editEndSection: document.querySelector("#editEndSection"),
+    editTeacher: document.querySelector("#editTeacher"),
+    editLocation: document.querySelector("#editLocation"),
+    editTopic: document.querySelector("#editTopic"),
+    editMessage: document.querySelector("#editMessage"),
+    dataDialog: document.querySelector("#dataDialog"),
+    closeDataButton: document.querySelector("#closeDataButton"),
+    dataStatus: document.querySelector("#dataStatus"),
+    exportButton: document.querySelector("#exportButton"),
+    importInput: document.querySelector("#importInput"),
+    resetButton: document.querySelector("#resetButton"),
   };
 
   const today = toLocalIso(new Date());
@@ -74,6 +109,68 @@
     ? requestedWeek
     : findClosestWeek(today).number;
   let selectedDate = pickDefaultDate(currentWeekNumber);
+  let activeEventId = null;
+  let editingEventId = null;
+
+  rebuildIndexes();
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function loadStoredEvents() {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return clone(sourceData.events);
+      const parsed = JSON.parse(stored);
+      const events = Array.isArray(parsed) ? parsed : parsed.events;
+      if (!isValidEventList(events)) throw new Error("课表备份格式无效");
+      return clone(events);
+    } catch (error) {
+      console.warn("无法读取本地课表，已使用网站原始数据。", error);
+      return clone(sourceData.events);
+    }
+  }
+
+  function isValidEventList(events) {
+    if (!Array.isArray(events)) return false;
+    const validDates = new Set(sourceData.weeks.flatMap((week) => week.days.map((day) => day.date)));
+    return events.every(
+      (event) =>
+        event &&
+        typeof event.id === "string" &&
+        typeof event.course === "string" &&
+        event.course.trim() &&
+        validDates.has(event.date) &&
+        Array.isArray(event.sections) &&
+        event.sections.length > 0 &&
+        event.sections.every((section) => Number.isInteger(section) && section >= 1 && section <= 13),
+    );
+  }
+
+  function rebuildIndexes() {
+    data.courses = [...new Set([...sourceData.courses, ...data.events.map((event) => event.course)])];
+    byId = new Map(data.events.map((event) => [event.id, event]));
+  }
+
+  function persistEvents() {
+    const payload = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      events: data.events,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+    rebuildIndexes();
+    updateDataStatus();
+  }
+
+  function hasStoredData() {
+    try {
+      return Boolean(localStorage.getItem(storageKey));
+    } catch (_error) {
+      return false;
+    }
+  }
 
   function toLocalIso(date) {
     const year = date.getFullYear();
@@ -185,6 +282,7 @@
     renderDesktop(week, weekEvents);
     renderDayTabs(week);
     renderAgenda();
+    renderNextCourse();
     updateUrl();
   }
 
@@ -326,6 +424,7 @@
   function showEvent(eventId) {
     const event = byId.get(eventId);
     if (!event) return;
+    activeEventId = eventId;
     const hue = hueFor(event.course);
     elements.dialogAccent.style.setProperty("--course-hue", String(hue));
     elements.dialogType.style.setProperty("--course-hue", String(hue));
@@ -337,6 +436,178 @@
     elements.dialogLocation.textContent = locationText(event);
     elements.dialogTeacher.textContent = event.teacher || "未注明";
     elements.dialog.showModal();
+  }
+
+  function setupEditor() {
+    for (let section = 1; section <= 13; section += 1) {
+      for (const select of [elements.editStartSection, elements.editEndSection]) {
+        const option = document.createElement("option");
+        option.value = String(section);
+        option.textContent = `第 ${section} 节 · ${sectionTimes[section][0]}–${sectionTimes[section][1]}`;
+        select.append(option);
+      }
+    }
+    elements.editDate.min = semesterDays[0].date;
+    elements.editDate.max = semesterDays.at(-1).date;
+  }
+
+  function openEditor(eventId = null) {
+    editingEventId = eventId;
+    elements.editMessage.textContent = "";
+    const event = eventId ? byId.get(eventId) : null;
+    elements.editDialogTitle.textContent = event ? "编辑这次安排" : "新增安排";
+    elements.deleteEventButton.hidden = !event;
+
+    elements.editCourse.value = event?.course ?? "";
+    ensureSelectOption(elements.editType, event?.type ?? "理论");
+    elements.editType.value = event?.type ?? "理论";
+    elements.editDate.value = event?.date ?? selectedDate ?? getWeek().days[0].date;
+    elements.editStartSection.value = String(event?.sections?.[0] ?? 1);
+    elements.editEndSection.value = String(event?.sections?.at(-1) ?? 2);
+    elements.editTeacher.value = event?.teacher ?? "";
+    elements.editLocation.value = event?.location ?? "";
+    elements.editTopic.value = event?.topic ?? "";
+
+    elements.editDialog.showModal();
+    requestAnimationFrame(() => elements.editCourse.focus());
+  }
+
+  function ensureSelectOption(select, value) {
+    if ([...select.options].some((option) => option.value === value)) return;
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.append(option);
+  }
+
+  function submitEditor(event) {
+    event.preventDefault();
+    elements.editMessage.textContent = "";
+    const course = elements.editCourse.value.trim();
+    const date = elements.editDate.value;
+    const day = semesterDays.find((item) => item.date === date);
+    const startSection = Number(elements.editStartSection.value);
+    const endSection = Number(elements.editEndSection.value);
+
+    if (!course) {
+      elements.editMessage.textContent = "请填写课程名称。";
+      elements.editCourse.focus();
+      return;
+    }
+    if (!day) {
+      elements.editMessage.textContent = "日期必须在本学期课表范围内。";
+      elements.editDate.focus();
+      return;
+    }
+    if (endSection < startSection) {
+      elements.editMessage.textContent = "结束节次不能早于开始节次。";
+      elements.editEndSection.focus();
+      return;
+    }
+
+    const sections = Array.from({ length: endSection - startSection + 1 }, (_item, index) => startSection + index);
+    const previous = editingEventId ? byId.get(editingEventId) : null;
+    const updated = {
+      ...(previous ?? {}),
+      id: previous?.id ?? `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      week: day.week,
+      date,
+      weekday: day.weekday,
+      slotStart: startSection - 1,
+      slotEnd: endSection - 1,
+      periodLabel: periodText({ sections }),
+      course,
+      type: elements.editType.value,
+      teacher: elements.editTeacher.value.trim(),
+      session: `${day.week}-${sections.map((section) => String(section).padStart(2, "0")).join("")}`,
+      location: elements.editLocation.value.trim(),
+      topic: elements.editTopic.value.trim(),
+      sections,
+    };
+
+    if (previous) {
+      data.events = data.events.map((item) => (item.id === previous.id ? updated : item));
+    } else {
+      data.events.push(updated);
+      currentWeekNumber = day.week;
+      selectedDate = date;
+    }
+
+    try {
+      persistEvents();
+    } catch (error) {
+      elements.editMessage.textContent = "保存失败：浏览器没有允许本地存储，请检查隐私设置。";
+      console.error(error);
+      return;
+    }
+    elements.editDialog.close();
+    render();
+  }
+
+  function deleteEditingEvent() {
+    const event = editingEventId ? byId.get(editingEventId) : null;
+    if (!event) return;
+    if (!confirm(`确定删除“${event.course}”这次安排吗？`)) return;
+    data.events = data.events.filter((item) => item.id !== event.id);
+    persistEvents();
+    elements.editDialog.close();
+    render();
+  }
+
+  function updateDataStatus() {
+    const customized = hasStoredData();
+    elements.dataButton.classList.toggle("has-local-data", customized);
+    elements.dataStatus.textContent = customized
+      ? `当前浏览器已保存自定义课表，共 ${data.events.length} 次安排。右上角橙色小点表示存在本地修改。`
+      : `当前使用网站原始课表，共 ${data.events.length} 次安排，尚无本地修改。`;
+  }
+
+  function exportData() {
+    const payload = {
+      name: "邵悠恺的课程表备份",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      events: data.events,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `课程表备份-${toLocalIso(new Date())}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importData(file) {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const events = Array.isArray(parsed) ? parsed : parsed.events;
+      if (!isValidEventList(events)) throw new Error("文件不是有效的课表备份");
+      data.events = clone(events);
+      persistEvents();
+      selectedDate = pickDefaultDate(currentWeekNumber);
+      render();
+      updateDataStatus();
+      alert("课表备份已成功导入。");
+    } catch (error) {
+      alert(`导入失败：${error.message}`);
+    } finally {
+      elements.importInput.value = "";
+    }
+  }
+
+  function resetData() {
+    if (!confirm("确定恢复网站原始课表吗？当前浏览器里的全部修改都会被清除。")) return;
+    localStorage.removeItem(storageKey);
+    data.events = clone(originalEvents);
+    rebuildIndexes();
+    selectedDate = pickDefaultDate(currentWeekNumber);
+    render();
+    updateDataStatus();
+    elements.dataDialog.close();
   }
 
   function changeWeek(nextNumber) {
@@ -372,6 +643,11 @@
   elements.nextWeek.addEventListener("click", () => changeWeek(currentWeekNumber + 1));
   elements.todayButton.addEventListener("click", () => changeWeek(findClosestWeek(today).number));
   elements.printButton.addEventListener("click", () => window.print());
+  elements.addButton.addEventListener("click", () => openEditor());
+  elements.dataButton.addEventListener("click", () => {
+    updateDataStatus();
+    elements.dataDialog.showModal();
+  });
   elements.themeButton.addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
@@ -395,13 +671,36 @@
   elements.dialog.addEventListener("click", (event) => {
     if (event.target === elements.dialog) elements.dialog.close();
   });
+  elements.editEventButton.addEventListener("click", () => {
+    elements.dialog.close();
+    openEditor(activeEventId);
+  });
+  elements.editForm.addEventListener("submit", submitEditor);
+  elements.closeEditButton.addEventListener("click", () => elements.editDialog.close());
+  elements.cancelEditButton.addEventListener("click", () => elements.editDialog.close());
+  elements.deleteEventButton.addEventListener("click", deleteEditingEvent);
+  elements.editStartSection.addEventListener("change", () => {
+    if (Number(elements.editEndSection.value) < Number(elements.editStartSection.value)) {
+      elements.editEndSection.value = elements.editStartSection.value;
+    }
+  });
+  elements.closeDataButton.addEventListener("click", () => elements.dataDialog.close());
+  elements.exportButton.addEventListener("click", exportData);
+  elements.importInput.addEventListener("change", (event) => importData(event.target.files?.[0]));
+  elements.resetButton.addEventListener("click", resetData);
+  for (const dialog of [elements.editDialog, elements.dataDialog]) {
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
   document.addEventListener("keydown", (event) => {
     if (event.altKey && event.key === "ArrowLeft") changeWeek(currentWeekNumber - 1);
     if (event.altKey && event.key === "ArrowRight") changeWeek(currentWeekNumber + 1);
   });
 
   setupTheme();
+  setupEditor();
   setupWeekSelect();
-  renderNextCourse();
+  updateDataStatus();
   render();
 })();

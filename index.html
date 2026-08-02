@@ -22,6 +22,12 @@
         </a>
 
         <div class="header-actions" aria-label="页面工具">
+          <button class="icon-button" id="addButton" type="button" aria-label="新增课程安排" title="新增课程安排">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          </button>
+          <button class="icon-button" id="dataButton" type="button" aria-label="管理课表数据" title="管理课表数据">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M9 17h6" /></svg>
+          </button>
           <button class="icon-button" id="printButton" type="button" aria-label="打印课程表" title="打印课程表">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
@@ -118,6 +124,91 @@
           <div><dt>地点</dt><dd id="dialogLocation">—</dd></div>
           <div><dt>教师</dt><dd id="dialogTeacher">—</dd></div>
         </dl>
+        <div class="dialog-actions">
+          <button class="button-primary" id="editEventButton" type="button">编辑这次安排</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="course-dialog edit-dialog" id="editDialog">
+      <form id="editForm">
+        <button class="dialog-close" id="closeEditButton" type="button" aria-label="关闭编辑窗口">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+        <div class="dialog-accent editor-accent"></div>
+        <div class="dialog-content">
+          <span class="course-type">课表编辑</span>
+          <h2 id="editDialogTitle">编辑安排</h2>
+          <p class="dialog-topic">保存后会自动存到当前浏览器，刷新页面也不会丢失。</p>
+
+          <div class="editor-grid">
+            <label class="field field-wide">
+              <span>课程名称</span>
+              <input id="editCourse" name="course" type="text" required maxlength="80" placeholder="例如：模拟电子技术" />
+            </label>
+            <label class="field">
+              <span>类型</span>
+              <select id="editType" name="type">
+                <option>理论</option>
+                <option>实验</option>
+                <option>考试</option>
+                <option>自主学习</option>
+                <option>其他</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>日期</span>
+              <input id="editDate" name="date" type="date" required />
+            </label>
+            <label class="field">
+              <span>开始节次</span>
+              <select id="editStartSection" name="startSection"></select>
+            </label>
+            <label class="field">
+              <span>结束节次</span>
+              <select id="editEndSection" name="endSection"></select>
+            </label>
+            <label class="field">
+              <span>教师</span>
+              <input id="editTeacher" name="teacher" type="text" maxlength="50" placeholder="未注明可留空" />
+            </label>
+            <label class="field">
+              <span>教室 / 地点</span>
+              <input id="editLocation" name="location" type="text" maxlength="80" placeholder="例如：2403教室" />
+            </label>
+            <label class="field field-wide">
+              <span>课程内容 / 备注</span>
+              <textarea id="editTopic" name="topic" rows="3" maxlength="300" placeholder="可以留空"></textarea>
+            </label>
+          </div>
+
+          <p class="form-message" id="editMessage" role="alert"></p>
+          <div class="dialog-actions dialog-actions-split">
+            <button class="button-danger" id="deleteEventButton" type="button">删除这次安排</button>
+            <span class="action-spacer"></span>
+            <button class="button-secondary" id="cancelEditButton" type="button">取消</button>
+            <button class="button-primary" type="submit">保存修改</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="course-dialog data-dialog" id="dataDialog">
+      <button class="dialog-close" id="closeDataButton" type="button" aria-label="关闭数据管理窗口">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+      <div class="dialog-accent data-accent"></div>
+      <div class="dialog-content">
+        <span class="course-type">数据管理</span>
+        <h2>备份与恢复</h2>
+        <p class="dialog-topic">修改只保存在当前浏览器。换手机、换浏览器或切换网站地址时，请先导出备份，再在另一端导入。</p>
+        <div class="data-status" id="dataStatus">正在读取本地数据…</div>
+        <div class="manage-actions">
+          <button class="button-secondary" id="exportButton" type="button">导出课表备份</button>
+          <label class="button-secondary file-button" for="importInput">导入课表备份</label>
+          <input class="sr-only" id="importInput" type="file" accept="application/json,.json" />
+          <button class="button-danger" id="resetButton" type="button">恢复网站原始课表</button>
+        </div>
       </div>
     </dialog>
 
