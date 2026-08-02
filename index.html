@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="邵悠恺 2026–2027 学年第一学期课程表" />
+    <meta name="theme-color" content="#f4f1ea" />
+    <title>邵悠恺的课程表</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="data.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="masthead">
+        <a class="identity" href="./" aria-label="返回课程表首页">
+          <span class="monogram" aria-hidden="true">邵</span>
+          <span>
+            <span class="eyebrow">2026—2027 · AUTUMN</span>
+            <span class="identity-name">邵悠恺</span>
+          </span>
+        </a>
+
+        <div class="header-actions" aria-label="页面工具">
+          <button class="icon-button" id="printButton" type="button" aria-label="打印课程表" title="打印课程表">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
+            </svg>
+          </button>
+          <button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换深色模式">
+            <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5 8.6 8.6 0 1 0 20.5 14.3z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="intro" aria-labelledby="pageTitle">
+          <div>
+            <p class="section-kicker">大二上课程安排</p>
+            <h1 id="pageTitle">我的课程表</h1>
+            <p class="intro-copy">按顺德校区作息浏览课程、实验和考试安排，点击课程卡片可查看详情。</p>
+          </div>
+
+          <aside class="next-card" id="nextCard" aria-live="polite">
+            <span class="next-card-label">下一次安排</span>
+            <strong id="nextCourse">正在读取课表…</strong>
+            <span id="nextMeta">请稍候</span>
+          </aside>
+        </section>
+
+        <section class="schedule-panel" aria-label="课程表">
+          <div class="schedule-toolbar">
+            <div class="week-switcher">
+              <button class="nav-button" id="previousWeek" type="button" aria-label="上一周">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+              </button>
+              <label class="select-wrap">
+                <span class="sr-only">选择周次</span>
+                <select id="weekSelect" aria-label="选择周次"></select>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4" /></svg>
+              </label>
+              <button class="nav-button" id="nextWeek" type="button" aria-label="下一周">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            </div>
+
+            <div class="week-summary">
+              <span id="weekRange">—</span>
+              <span class="summary-divider" aria-hidden="true"></span>
+              <strong id="weekStats">—</strong>
+            </div>
+
+            <button class="today-button" id="todayButton" type="button">
+              <span class="today-dot" aria-hidden="true"></span>
+              定位本周
+            </button>
+          </div>
+
+          <div class="desktop-schedule">
+            <div class="schedule-scroll">
+              <div class="schedule-grid" id="scheduleGrid" aria-label="本周课程网格"></div>
+            </div>
+          </div>
+
+          <div class="mobile-schedule">
+            <div class="day-tabs" id="dayTabs" role="tablist" aria-label="选择日期"></div>
+            <div class="mobile-agenda" id="mobileAgenda" role="tabpanel"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>2026–2027 学年 · 第一学期</span>
+        <span>顺德校区作息 · 0304 至 11:45，含 05 至 12:30</span>
+      </footer>
+    </div>
+
+    <dialog class="course-dialog" id="courseDialog">
+      <form method="dialog">
+        <button class="dialog-close" type="submit" aria-label="关闭课程详情">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </form>
+      <div class="dialog-accent" id="dialogAccent"></div>
+      <div class="dialog-content">
+        <span class="course-type" id="dialogType">课程</span>
+        <h2 id="dialogTitle">课程详情</h2>
+        <p class="dialog-topic" id="dialogTopic"></p>
+        <dl class="detail-list">
+          <div><dt>日期</dt><dd id="dialogDate">—</dd></div>
+          <div><dt>节次与时间</dt><dd id="dialogPeriod">—</dd></div>
+          <div><dt>地点</dt><dd id="dialogLocation">—</dd></div>
+          <div><dt>教师</dt><dd id="dialogTeacher">—</dd></div>
+        </dl>
+      </div>
+    </dialog>
+
+    <noscript>请启用 JavaScript 以浏览课表。</noscript>
+  </body>
+</html>
